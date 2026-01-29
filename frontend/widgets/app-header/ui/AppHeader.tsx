@@ -14,7 +14,7 @@ export const AppHeader = () => {
       <div className="container mx-auto">
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo.svg" alt="Logo" width={50} height={45} priority />
+            <Image src="/logo.svg" alt="Logo" width={50} height={45} />
             <span className="font-medium text-2xl">CollabTask</span>
           </Link>
           <nav>
