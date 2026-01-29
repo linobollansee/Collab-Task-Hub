@@ -63,8 +63,7 @@ const Chat: React.FC = () => {
       clearMessages();
       setHasLoadedInitial(false);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId, loadMessages, clearMessages]);
+  }, [projectId, hasLoadedInitial, loadMessages, clearMessages]);
 
   useEffect(() => {
     if (autoScroll && messagesEndRef.current) {

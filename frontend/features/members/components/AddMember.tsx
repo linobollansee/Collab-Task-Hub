@@ -19,8 +19,7 @@ export function AddMember({ projectId, onClose, members }: AddMemberProps) {
 
   useEffect(() => {
     getUsers(debouncedSearch);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch]);
+  }, [debouncedSearch, getUsers]);
 
   const memberUserId = new Set(members.map((m) => m.userId));
   const availableUsers = users.filter((u) => !memberUserId.has(u.id));
