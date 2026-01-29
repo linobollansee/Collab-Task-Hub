@@ -17,7 +17,7 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "pretest:e2e": "powershell -ExecutionPolicy Bypass -File ./setup-test-db.ps1",
+    "pretest:e2e": "node -e \"process.platform === 'win32' ? require('child_process').execSync('powershell -ExecutionPolicy Bypass -File ./setup-test-db.ps1', {stdio: 'inherit'}) : require('child_process').execSync('bash ./setup-test-db.sh', {stdio: 'inherit'})\"",
     "test:e2e": "jest --config ./test/jest-e2e.json --runInBand --detectOpenHandles --forceExit"
   },
   "dependencies": {
