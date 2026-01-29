@@ -16,7 +16,7 @@ import { TypingIndicator } from './TypingIndicator';
 
 const Chat: React.FC = () => {
   const { user } = useStoreAuth();
-  const { selectedProject } = useProjects();
+  const { selectedProject, getProjectById } = useProjects();
   const { openModal } = useModal();
   const projectId = selectedProject?.id || null;
 
@@ -44,6 +44,15 @@ const Chat: React.FC = () => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
   const loadedProjectRef = useRef<string | null>(null);
+
+  // Refetch project data when chat is viewed to ensure membership is current
+  useEffect(() => {
+    if (projectId) {
+      getProjectById(projectId).catch((error) => {
+        console.error('[CHAT] Failed to refetch project:', error);
+      });
+    }
+  }, [projectId, getProjectById]);
 
   useEffect(() => {
     console.log('[CHAT] Load messages effect', { projectId });
@@ -119,9 +128,14 @@ const Chat: React.FC = () => {
     }
   };
 
-  const isProjectMember =
-    selectedProject?.members.some((member) => member.userId === user?.id) ||
-    selectedProject?.createdById === user?.id;
+  // Calculate membership status reactively - updates when selectedProject changes
+  const isProjectMember = React.useMemo(() => {
+    if (!selectedProject || !user) return false;
+    return (
+      selectedProject.members.some((member) => member.userId === user.id) ||
+      selectedProject.createdById === user.id
+    );
+  }, [selectedProject, user]);
 
   if (!user) {
     return (
