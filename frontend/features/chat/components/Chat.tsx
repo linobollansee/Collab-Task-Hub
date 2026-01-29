@@ -43,16 +43,17 @@ const Chat: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
-  const [hasLoadedInitial, setHasLoadedInitial] = useState(false);
+  const loadedProjectRef = useRef<string | null>(null);
 
   useEffect(() => {
-    console.log('[CHAT] Load messages effect', { projectId, hasLoadedInitial });
+    console.log('[CHAT] Load messages effect', { projectId });
 
-    if (projectId && !hasLoadedInitial) {
+    if (projectId && loadedProjectRef.current !== projectId) {
+      loadedProjectRef.current = projectId;
+
       loadMessages(projectId)
         .then(() => {
           console.log('[CHAT] Messages loaded successfully');
-          setHasLoadedInitial(true);
         })
         .catch((error) => {
           console.error('[CHAT] Failed to load messages:', error);
@@ -60,10 +61,12 @@ const Chat: React.FC = () => {
     }
 
     return () => {
-      clearMessages();
-      setHasLoadedInitial(false);
+      if (projectId !== loadedProjectRef.current) {
+        clearMessages();
+        loadedProjectRef.current = null;
+      }
     };
-  }, [projectId, hasLoadedInitial, loadMessages, clearMessages]);
+  }, [projectId, loadMessages, clearMessages]);
 
   useEffect(() => {
     if (autoScroll && messagesEndRef.current) {
