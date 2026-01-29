@@ -71,7 +71,7 @@ export const EditTaskForm = ({ task, onClose, edit }: EditTaskFormProps) => {
       </div>
 
       <div className="flex justify-end gap-3 mt-2">
-        <Button type="button" variant="secondary" onClick={edit} className="px-4 py-2">
+        <Button type="button" variant="secondary" onClick={edit || onClose} className="px-4 py-2">
           Cancel
         </Button>
         <Button type="submit" disabled={isSubmitting} className="px-4 py-2">
