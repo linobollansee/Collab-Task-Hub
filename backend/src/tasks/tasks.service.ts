@@ -46,15 +46,14 @@ export class TasksService {
     const task = await this.findOne(id);
 
     // Filter out undefined values to avoid overwriting with null
-    const updates = Object.entries(updateTaskDto).reduce(
-      (acc, [key, value]) => {
-        if (value !== undefined) {
-          acc[key as keyof UpdateTaskDto] = value;
-        }
-        return acc;
-      },
-      {} as Partial<UpdateTaskDto>,
-    );
+    const updates = Object.entries(updateTaskDto).reduce<
+      Record<string, unknown>
+    >((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = value;
+      }
+      return acc;
+    }, {});
 
     Object.assign(task, updates);
     await this.taskRepository.save(task);

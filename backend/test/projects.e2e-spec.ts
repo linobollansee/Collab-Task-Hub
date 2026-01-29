@@ -1,8 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { createTestApp } from './test-utils';
@@ -12,7 +7,6 @@ describe('Projects (e2e)', () => {
   let userToken: string;
   let userId: string;
   let otherUserToken: string;
-  let otherUserId: string;
 
   beforeAll(async () => {
     app = await createTestApp();
@@ -37,7 +31,6 @@ describe('Projects (e2e)', () => {
         password: 'password123',
       });
     otherUserToken = otherUserResponse.body.access_token;
-    otherUserId = otherUserResponse.body.user.id;
   });
 
   afterAll(async () => {

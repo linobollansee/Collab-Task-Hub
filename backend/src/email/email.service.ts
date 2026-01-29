@@ -2,10 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Mailjet from 'node-mailjet';
 
+type MailjetClient = ReturnType<typeof Mailjet.apiConnect>;
+
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private mailjet: Mailjet.Client;
+  private mailjet: MailjetClient | null = null;
   private senderEmail: string;
   private isConfigured: boolean = false;
 
@@ -46,6 +48,10 @@ export class EmailService {
 
     const frontendUrl = this.configService.get<string>('FRONTEND_URL');
     const resetLink = `${frontendUrl}/reset-password?token=${resetToken}`;
+
+    if (!this.mailjet) {
+      throw new Error('Email service is not configured');
+    }
 
     try {
       await this.mailjet.post('send', { version: 'v3.1' }).request({
@@ -125,6 +131,10 @@ export class EmailService {
     }
 
     const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+
+    if (!this.mailjet) {
+      throw new Error('Email service is not configured');
+    }
 
     try {
       await this.mailjet.post('send', { version: 'v3.1' }).request({

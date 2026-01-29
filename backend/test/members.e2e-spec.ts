@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { createTestApp } from './test-utils';
@@ -9,7 +5,6 @@ import { createTestApp } from './test-utils';
 describe('Project Members (e2e)', () => {
   let app: INestApplication;
   let adminToken: string;
-  let _adminId: string;
   let memberToken: string;
   let memberId: string;
   let viewerToken: string;
@@ -28,7 +23,6 @@ describe('Project Members (e2e)', () => {
         password: 'password123',
       });
     adminToken = adminResponse.body.access_token;
-    _adminId = adminResponse.body.user.id;
 
     // Register member user
     const memberResponse = await request(app.getHttpServer())

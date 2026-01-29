@@ -55,8 +55,8 @@ export class UsersController {
       ? await this.usersService.searchUsers(search)
       : await this.usersService.getAllUsers();
     return users.map((user) => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { passwordHash, ...result } = user;
+      void passwordHash;
       return result;
     });
   }
@@ -77,8 +77,8 @@ export class UsersController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   getProfile(@CurrentUser() user: User) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...result } = user;
+    void passwordHash;
     return result;
   }
 
@@ -106,8 +106,8 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserDto,
   ) {
     const user = await this.usersService.updateProfile(userId, updateUserDto);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...result } = user;
+    void passwordHash;
     return result;
   }
 }

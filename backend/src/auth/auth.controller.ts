@@ -80,9 +80,9 @@ export class AuthController {
     description: 'Unauthorized - Invalid or missing token',
   })
   getMe(@CurrentUser() user: User) {
-    // Return user without password
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // Return user without password using Omit type
     const { passwordHash, ...userWithoutPassword } = user;
+    void passwordHash; // Mark as intentionally unused
     return userWithoutPassword;
   }
 

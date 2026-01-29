@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { createTestApp } from './test-utils';
@@ -10,7 +6,6 @@ describe('Tasks (e2e)', () => {
   let app: INestApplication;
   let userToken: string;
   let userId: string;
-  let _otherUserToken: string;
   let otherUserId: string;
   let projectId: string;
 
@@ -36,7 +31,6 @@ describe('Tasks (e2e)', () => {
         name: 'Other Task User',
         password: 'password123',
       });
-    _otherUserToken = otherUserResponse.body.access_token;
     otherUserId = otherUserResponse.body.user.id;
 
     // Create a test project
@@ -145,11 +139,8 @@ describe('Tasks (e2e)', () => {
   });
 
   describe('GET /tasks', () => {
-    let _task1Id: string;
-    let _task2Id: string;
-
     beforeAll(async () => {
-      const response1 = await request(app.getHttpServer())
+      await request(app.getHttpServer())
         .post('/tasks')
         .set('Authorization', `Bearer ${userToken}`)
         .send({
@@ -159,9 +150,8 @@ describe('Tasks (e2e)', () => {
           status: 'backlog',
           priority: 'low',
         });
-      _task1Id = response1.body.id;
 
-      const response2 = await request(app.getHttpServer())
+      await request(app.getHttpServer())
         .post('/tasks')
         .set('Authorization', `Bearer ${userToken}`)
         .send({
@@ -171,7 +161,6 @@ describe('Tasks (e2e)', () => {
           status: 'in_progress',
           priority: 'high',
         });
-      _task2Id = response2.body.id;
     });
 
     it('should get all tasks', async () => {
