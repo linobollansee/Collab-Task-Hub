@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { createTestApp } from './test-utils';
@@ -9,7 +10,7 @@ describe('Tasks (e2e)', () => {
   let app: INestApplication;
   let userToken: string;
   let userId: string;
-  let otherUserToken: string;
+  let _otherUserToken: string;
   let otherUserId: string;
   let projectId: string;
 
@@ -35,7 +36,7 @@ describe('Tasks (e2e)', () => {
         name: 'Other Task User',
         password: 'password123',
       });
-    otherUserToken = otherUserResponse.body.access_token;
+    _otherUserToken = otherUserResponse.body.access_token;
     otherUserId = otherUserResponse.body.user.id;
 
     // Create a test project
@@ -144,8 +145,8 @@ describe('Tasks (e2e)', () => {
   });
 
   describe('GET /tasks', () => {
-    let task1Id: string;
-    let task2Id: string;
+    let _task1Id: string;
+    let _task2Id: string;
 
     beforeAll(async () => {
       const response1 = await request(app.getHttpServer())
@@ -158,7 +159,7 @@ describe('Tasks (e2e)', () => {
           status: 'backlog',
           priority: 'low',
         });
-      task1Id = response1.body.id;
+      _task1Id = response1.body.id;
 
       const response2 = await request(app.getHttpServer())
         .post('/tasks')
@@ -170,7 +171,7 @@ describe('Tasks (e2e)', () => {
           status: 'in_progress',
           priority: 'high',
         });
-      task2Id = response2.body.id;
+      _task2Id = response2.body.id;
     });
 
     it('should get all tasks', async () => {
@@ -229,9 +230,7 @@ describe('Tasks (e2e)', () => {
     });
 
     it('should fail without authentication', async () => {
-      await request(app.getHttpServer())
-        .get(`/tasks/${taskId}`)
-        .expect(401);
+      await request(app.getHttpServer()).get(`/tasks/${taskId}`).expect(401);
     });
 
     it('should return 404 for non-existent task', async () => {
@@ -386,9 +385,7 @@ describe('Tasks (e2e)', () => {
     });
 
     it('should fail without authentication', async () => {
-      await request(app.getHttpServer())
-        .delete(`/tasks/${taskId}`)
-        .expect(401);
+      await request(app.getHttpServer()).delete(`/tasks/${taskId}`).expect(401);
     });
 
     it('should return 404 for non-existent task', async () => {

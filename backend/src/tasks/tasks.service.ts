@@ -44,21 +44,21 @@ export class TasksService {
 
   async update(id: string, updateTaskDto: UpdateTaskDto): Promise<Task> {
     const task = await this.findOne(id);
-    
+
     // Filter out undefined values to avoid overwriting with null
     const updates = Object.entries(updateTaskDto).reduce(
       (acc, [key, value]) => {
         if (value !== undefined) {
-          acc[key] = value;
+          acc[key as keyof UpdateTaskDto] = value;
         }
         return acc;
       },
       {} as Partial<UpdateTaskDto>,
     );
-    
+
     Object.assign(task, updates);
     await this.taskRepository.save(task);
-    
+
     // Reload task with all relations
     return this.findOne(id);
   }

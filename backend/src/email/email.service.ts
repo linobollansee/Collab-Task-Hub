@@ -5,7 +5,7 @@ import Mailjet from 'node-mailjet';
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private mailjet: any;
+  private mailjet: Mailjet.Client;
   private senderEmail: string;
   private isConfigured: boolean = false;
 
