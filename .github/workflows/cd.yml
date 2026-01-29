@@ -1,0 +1,301 @@
+name: CD Pipeline
+
+on:
+  push:
+    branches: [main, dev]
+    tags:
+      - "v*"
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Images
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.DOCKER_REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata for Backend
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_REGISTRY }}/collab-task-hub-backend
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+
+      - name: Extract metadata for Frontend
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_REGISTRY }}/collab-task-hub-frontend
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+
+      - name: Image digest
+        run: |
+          echo "Backend: ${{ steps.meta-backend.outputs.tags }}"
+          echo "Frontend: ${{ steps.meta-frontend.outputs.tags }}"
+
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate deployment prerequisites
+        run: |
+          if [[ -z "${{ secrets.PRODUCTION_HOST }}" ]]; then
+            echo "❌ PRODUCTION_HOST secret not set"
+            exit 1
+          fi
+          if [[ -z "${{ secrets.PRODUCTION_USER }}" ]]; then
+            echo "❌ PRODUCTION_USER secret not set"
+            exit 1
+          fi
+          if [[ -z "${{ secrets.PRODUCTION_SSH_KEY }}" ]]; then
+            echo "❌ PRODUCTION_SSH_KEY secret not set"
+            exit 1
+          fi
+          echo "✅ All deployment prerequisites validated"
+
+      - name: Deploy to production server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          port: ${{ secrets.PRODUCTION_SSH_PORT != '' && secrets.PRODUCTION_SSH_PORT || 22 }}
+          script: |
+            set -e
+            cd /opt/collab-task-hub
+
+            echo "🚀 Starting deployment at $(date)"
+
+            # Create backup of current state
+            echo "📦 Creating backup..."
+            BACKUP_DIR="backups/deployment-$(date +%Y%m%d-%H%M%S)"
+            mkdir -p "$BACKUP_DIR"
+            docker-compose -f docker-compose.prod.yml config > "$BACKUP_DIR/docker-compose.yml"
+            docker-compose -f docker-compose.prod.yml ps > "$BACKUP_DIR/running-containers.txt"
+
+            # Store current image tags for rollback
+            CURRENT_BACKEND=$(docker inspect collab-task-hub-backend-prod --format='{{.Image}}' 2>/dev/null || echo "none")
+            CURRENT_FRONTEND=$(docker inspect collab-task-hub-frontend-prod --format='{{.Image}}' 2>/dev/null || echo "none")
+            echo "Current backend: $CURRENT_BACKEND" > "$BACKUP_DIR/current-images.txt"
+            echo "Current frontend: $CURRENT_FRONTEND" >> "$BACKUP_DIR/current-images.txt"
+
+            # Pull latest changes
+            echo "📥 Pulling latest code..."
+            git pull origin main
+
+            # Pull latest Docker images
+            echo "🐋 Pulling latest Docker images..."
+            docker-compose -f docker-compose.prod.yml pull
+
+            # Deploy with zero downtime
+            echo "🔄 Deploying new version..."
+            docker-compose -f docker-compose.prod.yml up -d --no-deps --remove-orphans
+
+            # Wait for services to stabilize
+            echo "⏳ Waiting for services to stabilize..."
+            sleep 15
+
+            # Health check with retries
+            echo "🏥 Running health checks..."
+            HEALTH_CHECK_PASSED=false
+            for i in {1..30}; do
+              if curl -f -s http://localhost:4000/health > /dev/null 2>&1; then
+                echo "✅ Health check passed (attempt $i/30)"
+                HEALTH_CHECK_PASSED=true
+                break
+              fi
+              echo "⏳ Health check attempt $i/30 failed, retrying..."
+              sleep 2
+            done
+
+            if [ "$HEALTH_CHECK_PASSED" = false ]; then
+              echo "❌ Health check failed after 30 attempts"
+              echo "🔄 Initiating automatic rollback..."
+              
+              # Rollback to previous working version
+              if [ -f "$BACKUP_DIR/docker-compose.yml" ] && [ "$CURRENT_BACKEND" != "none" ] && [ "$CURRENT_FRONTEND" != "none" ]; then
+                echo "📋 Using backed up configuration from: $BACKUP_DIR"
+                
+                # Stop failed deployment
+                echo "🛑 Stopping failed deployment..."
+                docker-compose -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
+                
+                # Tag old images to ensure they're preserved
+                docker tag "$CURRENT_BACKEND" collab-task-hub-backend:rollback-temp 2>/dev/null || true
+                docker tag "$CURRENT_FRONTEND" collab-task-hub-frontend:rollback-temp 2>/dev/null || true
+                
+                # Modify backup compose file to use old images
+                sed -i.bak \
+                  -e "s|image:.*collab-task-hub-backend.*|image: $CURRENT_BACKEND|g" \
+                  -e "s|image:.*collab-task-hub-frontend.*|image: $CURRENT_FRONTEND|g" \
+                  "$BACKUP_DIR/docker-compose.yml"
+                
+                # Start services with previous configuration and images
+                echo "♻️ Restoring previous version..."
+                docker-compose -f "$BACKUP_DIR/docker-compose.yml" up -d backend frontend
+                
+                # Wait for rollback to stabilize
+                sleep 10
+                
+                # Verify rollback succeeded
+                if curl -f -s http://localhost:4000/health > /dev/null 2>&1; then
+                  echo "✅ Rollback successful - service restored"
+                  echo "📊 Rollback Details:"
+                  echo "  - Backend Image: $CURRENT_BACKEND"
+                  echo "  - Frontend Image: $CURRENT_FRONTEND"
+                  echo "  - Backup Location: $BACKUP_DIR"
+                else
+                  echo "❌ Rollback health check failed - manual intervention required"
+                  echo "🆘 Backup available at: $BACKUP_DIR"
+                fi
+              else
+                echo "⚠️ No previous version available for automatic rollback"
+                echo "📁 Backup directory: $BACKUP_DIR"
+                echo "🆘 Manual intervention required"
+              fi
+              
+              echo "❌ Deployment failed - check logs for details"
+              exit 1
+            fi
+
+            # Verify all services are running
+            echo "🔍 Verifying all services..."
+            docker-compose -f docker-compose.prod.yml ps
+
+            # Check container health
+            BACKEND_STATUS=$(docker inspect collab-task-hub-backend-prod --format='{{.State.Status}}')
+            FRONTEND_STATUS=$(docker inspect collab-task-hub-frontend-prod --format='{{.State.Status}}')
+            POSTGRES_STATUS=$(docker inspect collab-task-hub-db-prod --format='{{.State.Status}}')
+
+            if [ "$BACKEND_STATUS" != "running" ] || [ "$FRONTEND_STATUS" != "running" ] || [ "$POSTGRES_STATUS" != "running" ]; then
+              echo "❌ Not all services are running properly"
+              echo "Backend: $BACKEND_STATUS, Frontend: $FRONTEND_STATUS, Postgres: $POSTGRES_STATUS"
+              exit 1
+            fi
+
+            # Clean up old images (only dangling, not all)
+            echo "🧹 Cleaning up dangling images..."
+            docker image prune -f
+
+            # Clean up old backups (keep last 10)
+            echo "🗂️ Cleaning up old backups..."
+            cd backups
+            ls -t | tail -n +11 | xargs -r rm -rf
+            cd ..
+
+            echo "✅ Deployment completed successfully at $(date)!"
+            echo "📊 Deployment Summary:"
+            echo "  - Backend: Running"
+            echo "  - Frontend: Running"
+            echo "  - Database: Running"
+            echo "  - Health Check: Passed"
+
+  notify:
+    name: Notify Deployment Status
+    runs-on: ubuntu-latest
+    needs: [build-and-push, deploy]
+    if: always()
+
+    steps:
+      - name: Send notification
+        run: |
+          echo "========================================"
+          echo "📢 Deployment Notification"
+          echo "========================================"
+          echo "Repository: ${{ github.repository }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Workflow: ${{ github.workflow }}"
+          echo "========================================"
+
+          BUILD_STATUS="${{ needs.build-and-push.result }}"
+          DEPLOY_STATUS="${{ needs.deploy.result }}"
+
+          echo "Build Status: $BUILD_STATUS"
+          echo "Deploy Status: $DEPLOY_STATUS"
+          echo "========================================"
+
+          if [[ "$BUILD_STATUS" == "success" ]] && [[ "$DEPLOY_STATUS" == "success" ]]; then
+            echo "✅ DEPLOYMENT SUCCESSFUL!"
+            echo "🌐 Application is live at: https://${{ secrets.PRODUCTION_DOMAIN }}"
+            echo "🕐 Deployment completed at: $(date -u)"
+            exit 0
+          elif [[ "$BUILD_STATUS" == "failure" ]]; then
+            echo "❌ BUILD FAILED!"
+            echo "⚠️ Docker images were not built/pushed successfully"
+            exit 1
+          elif [[ "$DEPLOY_STATUS" == "failure" ]]; then
+            echo "❌ DEPLOYMENT FAILED!"
+            echo "⚠️ Application may have been rolled back to previous version"
+            echo "🔍 Check deployment logs for details"
+            exit 1
+          elif [[ "$DEPLOY_STATUS" == "skipped" ]]; then
+            echo "⏭️ DEPLOYMENT SKIPPED"
+            echo "ℹ️ This may be a non-main branch push"
+            exit 0
+          else
+            echo "⚠️ UNKNOWN STATUS"
+            echo "Build: $BUILD_STATUS, Deploy: $DEPLOY_STATUS"
+            exit 1
+          fi

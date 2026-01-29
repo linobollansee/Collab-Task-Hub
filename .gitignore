@@ -1,0 +1,85 @@
+# =========================
+# OS / Editor
+# =========================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# =========================
+# Logs
+# =========================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =========================
+# Environment files
+# =========================
+.env
+.env.*
+!.env.example
+!.env.prod.example
+
+# Production secrets
+.env.prod
+nginx/ssl/*.key
+nginx/ssl/*.pem
+nginx/ssl/*.crt
+
+# =========================
+# Node / Package managers
+# =========================
+node_modules/
+.pnpm-store/
+.npm/
+
+# =========================
+# Build outputs
+# =========================
+dist/
+build/
+.out/
+coverage/
+
+# =========================
+# Next.js
+# =========================
+.next/
+.vercel/
+
+# =========================
+# NestJS
+# =========================
+backend/dist/
+
+# =========================
+# TypeScript
+# =========================
+*.tsbuildinfo
+
+# =========================
+# Docker
+# =========================
+docker-data/
+postgres-data/
+*.pid
+
+# Docker volumes and production data
+volumes/
+backups/*.sql
+!backups/.gitkeep
+
+# =========================
+# Testing
+# =========================
+coverage/
+cypress/videos/
+cypress/screenshots/
+
+# =========================
+# Misc
+# =========================
+*.swp
+*.swo

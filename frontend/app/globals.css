@@ -1,0 +1,206 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui;
+  --font-heading: var(--font-nunito), sans-serif;
+
+  --container-max-width: 1200px;
+
+  --color-bg-main: hsl(216, 100%, 97%);
+  --color-bg-white: hsl(0, 0%, 100%);
+
+  --color-txt-main: hsl(0, 0%, 26%);
+  --color-txt-dark: hsl(0, 0%, 0%);
+
+  --color-txt-warning: hsl(0, 73%, 49%);
+  --color-txt-success: hsl(119, 73%, 43%);
+
+  --color-btn-primary: hsl(215 100% 51%);
+  --color-btn-primary-hover: hsl(215 100% 46%);
+  --color-btn-primary-active: hsl(215 100% 41%);
+  --color-btn-primary-disabled: hsl(215 100% 80%);
+
+  --color-btn-secondary: hsl(212 62% 96%);
+  --color-btn-secondary-hover: hsl(212 62% 93%);
+  --color-btn-secondary-active: hsl(212 62% 90%);
+  --color-btn-secondary-disabled: hsl(212 20% 96%);
+
+  --color-border-default: hsl(0, 0%, 85%);
+  --radius-default: 12px;
+
+  --color-input-border: hsl(192, 5%, 82%);
+  --color-input-bg: hsl(0, 0%, 100%);
+  --color-input-text: hsl(200, 4%, 68%);
+  --color-input-placeholder: hsl(200, 4%, 68%);
+  --radius-input: 8px;
+}
+
+@layer base {
+  .font-heading {
+    font-family: var(--font-heading);
+  }
+
+  .font-sans {
+    font-family: var(--font-sans);
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--color-bg-main);
+    color: var(--color-txt-main);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+    color: var(--color-txt-dark);
+    font-weight: 600;
+  }
+}
+
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 45px;
+    border-radius: 15px;
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .btn-primary {
+    background-color: var(--color-btn-primary);
+    color: #fff;
+  }
+
+  .btn-primary:not(:disabled):hover {
+    background-color: var(--color-btn-primary-hover);
+  }
+
+  .btn-primary:not(:disabled):active {
+    background-color: var(--color-btn-primary-active);
+  }
+
+  .btn-primary:disabled {
+    background-color: var(--color-btn-primary-disabled);
+    cursor: not-allowed;
+  }
+
+  .btn-secondary {
+    background-color: var(--color-btn-secondary);
+    color: var(--color-txt-dark);
+  }
+
+  .btn-secondary:not(:disabled):hover {
+    background-color: var(--color-btn-secondary-hover);
+  }
+
+  .btn-secondary:not(:disabled):active {
+    background-color: var(--color-btn-secondary-active);
+  }
+
+  .btn-secondary:disabled {
+    background-color: var(--color-btn-secondary-disabled);
+    cursor: not-allowed;
+  }
+
+  .border-default {
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-default);
+  }
+
+  .container {
+    width: 100%;
+    max-width: var(--container-max-width);
+    margin: 0 auto;
+    padding: 0 15px;
+  }
+
+  .input {
+    padding: 8px 16px;
+    border-radius: var(--radius-input);
+    border: 1px solid var(--color-input-border);
+    background-color: var(--color-input-bg);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    font-weight: 400;
+    outline: none;
+  }
+
+  .input::placeholder {
+    color: var(--color-input-placeholder);
+  }
+
+  .input:focus {
+    border-color: var(--color-input-border);
+    box-shadow: none;
+  }
+
+  .input:focus-visible {
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
+  }
+}
+
+@layer utilities {
+  @keyframes modal-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes modal-fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes modal-pop-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes modal-pop-out {
+    from {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+  }
+
+  .animate-modal-overlay-in {
+    animation: modal-fade-in 200ms ease-out both;
+  }
+  .animate-modal-overlay-out {
+    animation: modal-fade-out 200ms ease-out both;
+  }
+
+  .animate-modal-panel-in {
+    animation: modal-pop-in 200ms ease-out both;
+  }
+  .animate-modal-panel-out {
+    animation: modal-pop-out 200ms ease-out both;
+  }
+}

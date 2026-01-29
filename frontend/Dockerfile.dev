@@ -1,0 +1,19 @@
+# Development Dockerfile
+FROM node:20-alpine AS development
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies
+RUN npm install
+
+# Copy source code (will be overridden by volume mount)
+COPY . .
+
+# Expose the port
+EXPOSE 3000
+
+# Start with hot-reload
+CMD ["npm", "run", "dev"]

@@ -1,0 +1,9 @@
+# SSL certificates directory
+
+# Certificate files are gitignored for security
+
+# Place your SSL certificates here:
+
+# - certificate.crt
+
+# - private.key
