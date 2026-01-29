@@ -22,6 +22,7 @@ export const EditTaskForm = ({ task, onClose, edit }: EditTaskFormProps) => {
       const payload = {
         title: data.title,
         description: data.description,
+        priority: data.priority,
       };
       await updateTask(task.id, payload as Task);
       onClose();
@@ -52,6 +53,20 @@ export const EditTaskForm = ({ task, onClose, edit }: EditTaskFormProps) => {
             rows={4}
             className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500 resize-none transition-all"
           />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">
+            Priority
+          </label>
+          <select
+            {...register('priority')}
+            className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+          >
+            <option value="low">Low Priority</option>
+            <option value="medium">Medium Priority</option>
+            <option value="high">High Priority</option>
+          </select>
         </div>
       </div>
 

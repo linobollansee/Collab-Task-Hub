@@ -3,10 +3,19 @@ import { useDroppable } from '@dnd-kit/core';
 
 import BoardCard from '@/features/board/components/BoardCard';
 import { ColumnType } from '@/features/board/types';
+import { Task } from '@/features/task/types';
 
 const BoardColumn: FC<ColumnType> = ({ tasks, column }) => {
   const { setNodeRef } = useDroppable({
     id: column.id,
+  });
+
+  // Sort tasks by priority (high -> medium -> low)
+  const priorityOrder = { high: 3, medium: 2, low: 1 };
+  const sortedTasks = [...tasks].sort((a: Task, b: Task) => {
+    const aPriority = a.priority || 'medium';
+    const bPriority = b.priority || 'medium';
+    return priorityOrder[bPriority] - priorityOrder[aPriority];
   });
 
   return (
@@ -19,7 +28,7 @@ const BoardColumn: FC<ColumnType> = ({ tasks, column }) => {
       </h2>
 
       <div className="flex flex-col gap-3">
-        {tasks.map((task) => (
+        {sortedTasks.map((task) => (
           <BoardCard key={task.id} task={task} />
         ))}
       </div>

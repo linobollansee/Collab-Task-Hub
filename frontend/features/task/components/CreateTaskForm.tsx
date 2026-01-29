@@ -37,6 +37,7 @@ const CreateTaskForm = () => {
         title: data.title,
         description: data.description?.trim() || '',
         projectId,
+        priority: data.priority || 'medium',
       });
 
       reset();
@@ -62,6 +63,17 @@ const CreateTaskForm = () => {
 
           <div className="w-full">
             <Input type="text" placeholder="Enter description" {...register('description')} />
+          </div>
+
+          <div className="w-full">
+            <select
+              {...register('priority')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="low">Low Priority</option>
+              <option value="medium">Medium Priority</option>
+              <option value="high">High Priority</option>
+            </select>
           </div>
 
           <Button type="submit" disabled={isDisabled}>

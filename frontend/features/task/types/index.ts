@@ -1,11 +1,14 @@
+export type TaskPriority = 'low' | 'medium' | 'high';
+export type TaskStatus = 'backlog' | 'in_progress' | 'review' | 'done';
+
 export interface Task {
   id: string;
   title: string;
   description?: string;
   projectId?: string;
   createdAt?: string;
-  priority?: string;
-  status: string;
+  priority: TaskPriority;
+  status: TaskStatus;
   updatedAt?: string;
 }
 
@@ -13,6 +16,7 @@ export interface CreateTaskDto {
   title: string;
   description?: string;
   projectId: string;
+  priority?: TaskPriority;
 }
 
 export interface TaskStore {
